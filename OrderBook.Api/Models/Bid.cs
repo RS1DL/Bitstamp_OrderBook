@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace OrderBook.Api.Services
+namespace OrderBook.Api.Models
 {
-    public interface IDataProcessor
+    public class Bid
     {
-        public Task ProcessDataAsync();
+        
     }
 }

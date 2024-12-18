@@ -22,6 +22,10 @@ namespace OrderBook.Api.Models
             }
             """;
 
+            jsonBody = jsonBody.Replace("{Event}", Event);
+            jsonBody = jsonBody.Replace("{Channel}", Channel);
+            jsonBody = jsonBody.Replace("{Pair}", Pair);
+
             return jsonBody;
         }
     }
