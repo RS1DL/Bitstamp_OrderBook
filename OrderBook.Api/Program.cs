@@ -1,5 +1,5 @@
 using OrderBook.Api.Infrastructure.Hub;
-using OrderBook.Api.Models;
+using OrderBook.Shared.Models;
 using OrderBook.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 builder.Services.AddCors();
+builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddConsole());
 
 builder.Services.AddTransient<IDataReceiver, OrderBookDataReceiver>();
 builder.Services.AddTransient<IDataProcessor<LiveOrderBook>, OrderBookDataProcessor>();

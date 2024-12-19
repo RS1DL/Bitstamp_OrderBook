@@ -1,0 +1,68 @@
+@page "/orderbook/btceur"
+@attribute [StreamRendering]
+@using OrderBook.Shared.Models;
+@using Microsoft.AspNetCore.SignalR.Client;
+
+<PageTitle>BTC\EUR Order Book</PageTitle>
+
+Bids 
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Price</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var bid in _bids)
+        {
+            <tr>
+                <td>@bid[0]</td>
+                <td>@bid[1]</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+Asks
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Price</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ask in _asks)
+        {
+            <tr>
+                <td>@ask[0]</td>
+                <td>@ask[1]</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code
+{
+    private HubConnection _hubConnection;
+    private List<string[]> _bids = new();
+    private List<string[]> _asks = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl("http://localhost:5192/orderbookhub")
+            .Build();
+
+        _hubConnection.On<LiveOrderBook>("ReceiveOrderBookCurrentState", book =>
+        {
+            _bids = book.Bids;
+            _asks = book.Asks;
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+}

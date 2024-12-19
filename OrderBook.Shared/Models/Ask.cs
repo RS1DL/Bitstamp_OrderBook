@@ -1,4 +1,4 @@
-namespace OrderBook.Api.Models
+namespace OrderBook.Shared.Models
 {
     public record Ask
     {

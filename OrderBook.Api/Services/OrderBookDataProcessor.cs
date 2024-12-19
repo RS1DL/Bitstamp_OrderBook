@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using OrderBook.Api.Infrastructure.Hub;
-using OrderBook.Api.Models;
+using OrderBook.Shared.Models;
 
 namespace OrderBook.Api.Services
 {

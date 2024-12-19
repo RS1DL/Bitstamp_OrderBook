@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Net.WebSockets;
-using OrderBook.Api.Models;
+using OrderBook.Shared.Models;
 using System.Text;
 using System.Text.Json;
+using OrderBook.Api.Models;
 
 namespace OrderBook.Api.Services
 {
@@ -38,7 +39,14 @@ namespace OrderBook.Api.Services
 
         public async Task ReceiveDataAsync()
         {
-            var buffer = new byte[1024 * 4];
+
+            if(_client.State != WebSocketState.Open)
+            {
+                await _client.ConnectAsync(new Uri("wss://ws.bitstamp.net"), CancellationToken.None);
+                await SubscribeAsync("btceur");
+            }
+
+            var buffer = new byte[1024 * 10];
 
             while(_client.State == WebSocketState.Open)
             {
@@ -50,24 +58,32 @@ namespace OrderBook.Api.Services
                 else
                 {
                     string data = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    LiveOrderBook orderBook = JsonSerializer.Deserialize<LiveOrderBook>(data);
-                    _logger.LogInformation($"Received order book data at {orderBook.TimeStamp} with {orderBook.Bids.Count} bids and {orderBook.Asks.Count} asks.");
+                    if(!string.IsNullOrEmpty(data))
+                    {   
+                        var options = new JsonSerializerOptions{
+                            PropertyNameCaseInsensitive = true
+                        };
+                        BitstampResponse response = JsonSerializer.Deserialize<BitstampResponse>(data, options);
+                        //_logger.LogInformation($"Received order book data at {orderBook.TimeStamp} with {orderBook.Bids.Count} bids and {orderBook.Asks.Count} asks.");
 
-                    await _dataProcessor.ProcessDataAsync(orderBook);
+                        await _dataProcessor.ProcessDataAsync(response.Data);
+                    }
                 }
             }
         }
 
         public async Task UnsubscribeAsync(string pair){ //TODO make it withot hardcoding
+            if(_client.State == WebSocketState.Open)
+            {    
+                var _unsubscription = new BitstampEvent("bts:unsubscribe")
+                {
+                    Pair = pair
+                };
 
-            var _unsubscription = new BitstampEvent("bts:unsubscribe")
-            {
-                Pair = pair
-            };
-
-            string jsonBody = _unsubscription.ToString();
-            byte[] buffer = Encoding.UTF8.GetBytes(jsonBody);
-            await _client.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+                string jsonBody = _unsubscription.ToString();
+                byte[] buffer = Encoding.UTF8.GetBytes(jsonBody);
+                await _client.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
