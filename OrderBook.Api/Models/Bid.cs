@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace OrderBook.Api.Models
 {
-    public class Bid
+    public record Bid
     {
-        
+        public float Price { get; init; }
+        public float Amount { get; init; }
     }
 }

@@ -5,8 +5,18 @@ using System.Threading.Tasks;
 
 namespace OrderBook.Api.Models
 {
-    public class BitstampSubscription
+    public class BitstampEvent
     {
+        public BitstampEvent(string _event, string channel, string pair)
+        {
+            Event = _event;
+            Channel = channel;
+            Pair = pair;
+        }
+
+        public BitstampEvent(string _event): this(_event, "order_book", "btceur") { }
+        public BitstampEvent(): this("bts:subscribe", "order_book", "btceur") { }
+
         public string Event { get; set; } = "bts:subscribe";
         public string Channel { get; set; } = "order_book";
         public string Pair { get; set; } = "btceur";

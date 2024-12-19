@@ -9,22 +9,28 @@ using System.Text.Json;
 
 namespace OrderBook.Api.Services
 {
-    public class OrderBookDataReceiver: IDisposable, IDataReceiver
+    public class OrderBookDataReceiver: BackgroundService, IDisposable, IDataReceiver
     {
         private readonly ILogger<OrderBookDataReceiver> _logger;
         private readonly ClientWebSocket _client;
-        private readonly BitstampSubscription _subscription;
+        private readonly IDataProcessor<LiveOrderBook> _dataProcessor;
 
-        public OrderBookDataReceiver(ILogger<OrderBookDataReceiver> logger)
+        public OrderBookDataReceiver(
+            ILogger<OrderBookDataReceiver> logger,
+            IDataProcessor<LiveOrderBook> dataProcessor)
         {
             _logger = logger;
             _client = new ClientWebSocket();
-            _subscription = new BitstampSubscription();
+            _dataProcessor = dataProcessor;
         }
 
         public async Task SubscribeAsync(string pair)
         {
-            _subscription.Pair = pair;
+            var _subscription = new BitstampEvent("bts:subscribe")
+            {
+                Pair = pair
+            };
+
             string jsonBody = _subscription.ToString();
             byte[] buffer = Encoding.UTF8.GetBytes(jsonBody);
             await _client.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -44,15 +50,34 @@ namespace OrderBook.Api.Services
                 else
                 {
                     string data = Encoding.UTF8.GetString(buffer, 0, result.Count);
-
                     LiveOrderBook orderBook = JsonSerializer.Deserialize<LiveOrderBook>(data);
                     _logger.LogInformation($"Received order book data at {orderBook.TimeStamp} with {orderBook.Bids.Count} bids and {orderBook.Asks.Count} asks.");
+
+                    await _dataProcessor.ProcessDataAsync(orderBook);
                 }
             }
         }
 
+        public async Task UnsubscribeAsync(string pair){ //TODO make it withot hardcoding
+
+            var _unsubscription = new BitstampEvent("bts:unsubscribe")
+            {
+                Pair = pair
+            };
+
+            string jsonBody = _unsubscription.ToString();
+            byte[] buffer = Encoding.UTF8.GetBytes(jsonBody);
+            await _client.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            await ReceiveDataAsync();
+        }
+
         public void Dispose()
         {
+            UnsubscribeAsync("btceur").Wait(); 
             _client.Dispose();
         }
     }

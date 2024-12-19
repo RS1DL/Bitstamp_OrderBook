@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 
 namespace OrderBook.Api.Services
 {
-    public interface IDataProcessor
+    public interface IDataProcessor<T>
     {
-        public Task ProcessDataAsync();
+        public Task ProcessDataAsync(T data);
     }
 }

@@ -3,3 +3,22 @@
 
 <PageTitle>BTC\EUR Order Book</PageTitle>
 
+@code
+{
+    private HubConnection _hubConnection;
+    private List<(float, float)> _bids = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/orderbookhub"))
+            .Build();
+
+        _hubConnection.On<object>("", bid =>
+        {
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+    }
+}

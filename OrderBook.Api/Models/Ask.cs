@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace OrderBook.Api.Models
 {
-    public class Ask
+    public record Ask
     {
-        
+        public float Price { get; init; }
+        public float Amount { get; init; }
     }
 }
