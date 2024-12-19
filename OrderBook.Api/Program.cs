@@ -1,6 +1,7 @@
 using OrderBook.Api.Infrastructure.Hub;
 using OrderBook.Shared.Models;
 using OrderBook.Api.Services;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,15 @@ builder.Services.AddTransient<IDataReceiver, OrderBookDataReceiver>();
 builder.Services.AddTransient<IDataProcessor<LiveOrderBook>, OrderBookDataProcessor>();
 
 builder.Services.AddHostedService<OrderBookDataReceiver>();
+
+builder.Host.UseSerilog((ctx, lc) => lc
+    .MinimumLevel.Debug()
+    .WriteTo.RollingFile(builder.Configuration.GetSection("Logger").GetValue<string>("Path") +"/log-{Date}.txt",
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:W}] {Message:lj}{NewLine}{Exception}", 
+            retainedFileCountLimit: 14, 
+            fileSizeLimitBytes: 1073741824
+            )
+);
 
 var app = builder.Build();
 

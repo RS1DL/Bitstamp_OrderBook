@@ -60,6 +60,7 @@ Asks
             _bids = book.Bids;
             _asks = book.Asks;
 
+            Logger.LogInformation("Received order book data");
             InvokeAsync(StateHasChanged);
         });
 
