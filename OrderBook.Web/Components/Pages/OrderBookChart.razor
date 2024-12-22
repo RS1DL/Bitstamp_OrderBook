@@ -1,0 +1,134 @@
+@page "/orderbook/btceur"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject IJSRuntime JSRuntime
+@inject ILogger<OrBook> Logger
+@using OrderBook.Shared.Models;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using System.Globalization;
+
+<h3>Order Book</h3>
+<canvas id="orderBookChart" width="400" height="200"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let orderBookChart;
+
+    function initializeOrderBookChart() {
+        const ctx = document.getElementById('orderBookChart').getContext('2d');
+        orderBookChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [90, 60], // Prices
+                datasets: [
+                    /*{
+                        label: 'Bids',
+                        data: [34, 56], // Bid volumes
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },*/
+                    {
+                        label: 'Asks',
+                        data: [41, 32], // Ask volumes
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Price' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Volume' }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateOrderBookChart(bids, asks, prices) {
+        if (!orderBookChart) {
+            initializeOrderBookChart();
+        }
+
+        orderBookChart.data.labels = prices;
+        orderBookChart.data.datasets[0].data = bids;
+        //orderBookChart.data.datasets[1].data = asks;
+        orderBookChart.update();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        initializeOrderBookChart();
+    });
+</script>
+
+@code
+{
+    private HubConnection _hubConnection;
+    List<decimal> bids = new();
+    List<decimal> asks = new();
+    List<decimal> prices = new();
+    private bool _dataUpdated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl("http://localhost:5192/orderbookhub")
+            .Build();
+
+        _hubConnection.On<LiveOrderBook>("ReceiveOrderBookCurrentState", async (book) =>
+        {
+            Logger.LogInformation($"Received order book data {book.Bids.Count} bids and {book.Asks.Count} asks.");
+
+            try
+            {
+                bids = book.Bids.Select(b => decimal.Parse(b[0], CultureInfo.InvariantCulture)).ToList();
+                asks = book.Asks.Select(a => decimal.Parse(a[0], CultureInfo.InvariantCulture)).ToList();
+                prices = book.Bids.Select(b => decimal.Parse(b[1], CultureInfo.InvariantCulture)).ToList();
+                    //.Concat(book.Asks.Select(a => decimal.Parse(a[1], CultureInfo.InvariantCulture))).ToList();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error parsing prices");
+            }
+    
+
+            //Logger.LogInformation($"Bid 1 {IfNull(bids[0])} {IfNull(bids[1])}");
+
+            //await JSRuntime.InvokeVoidAsync("updateOrderBookChart", bids, asks, prices);
+
+            //StateHasChanged();
+
+            _dataUpdated = true;
+            //await InvokeAsync(async () => await JSRuntime.InvokeVoidAsync("updateOrderBookChart", bids, asks, prices));
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        
+        if(firstRender){
+            if (_dataUpdated)
+            {
+                await JSRuntime.InvokeVoidAsync("updateOrderBookChart", bids, asks, prices);
+                _dataUpdated = false;
+            }
+        }
+    }
+
+    protected string IfNull(string value)
+    {
+        return value ?? "null";
+    }
+}

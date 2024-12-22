@@ -22,8 +22,15 @@ namespace OrderBook.Api.Services
 
         public async Task ProcessDataAsync(LiveOrderBook data)
         {
-            _logger.LogInformation($"Processing data for batch {data.TimeStamp}");
-            await _hubContext.Clients.All.ReceiveOrderBookCurrentState(data);
+            try{
+                _logger.LogInformation($"Processing data for batch {data.TimeStamp}");
+                _logger.LogInformation($"Data first bid {data.Bids.First()[0]} {data.Bids.First()[1]}");
+                await _hubContext.Clients.All.ReceiveOrderBookCurrentState(data);
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error processing data");
+            }
         }
     }
 }
