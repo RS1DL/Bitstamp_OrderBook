@@ -2,77 +2,43 @@
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
-@inject ILogger<OrBook> Logger
+@inject ILogger<OrderBookChart> Logger
+@using ApexCharts;
 @using OrderBook.Shared.Models;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using System.Globalization;
 
 <h3>Order Book</h3>
-<canvas id="orderBookChart" width="400" height="200"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    let orderBookChart;
-
-    function initializeOrderBookChart() {
-        const ctx = document.getElementById('orderBookChart').getContext('2d');
-        orderBookChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: [90, 60], // Prices
-                datasets: [
-                    /*{
-                        label: 'Bids',
-                        data: [34, 56], // Bid volumes
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    },*/
-                    {
-                        label: 'Asks',
-                        data: [41, 32], // Ask volumes
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Price' }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Volume' }
-                    }
-                }
-            }
-        });
-    }
-
-    function updateOrderBookChart(bids, asks, prices) {
-        if (!orderBookChart) {
-            initializeOrderBookChart();
-        }
-
-        orderBookChart.data.labels = prices;
-        orderBookChart.data.datasets[0].data = bids;
-        //orderBookChart.data.datasets[1].data = asks;
-        orderBookChart.update();
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        initializeOrderBookChart();
-    });
-</script>
+<div class="chart-container">
+    <ApexChart TItem="Bid"
+               Title="Order Book"
+               @ref="_bookChart">
+        
+        <ApexPointSeries TItem="Bid"
+                         Items="bids"
+                         Name="Bids"
+                            XValue="@((b) => b.Price)"
+                            YValue="@((b) => b.Quantity)"
+                            OrderByDescending="e=>e.Y"
+                            SeriesType="SeriesType.Bar"
+                         />
+    </ApexChart>
+</div>
 
 @code
 {
+    public class Bid
+    {
+        public decimal Price { get; set; }
+        public decimal Quantity { get; set; }
+    }
+
     private HubConnection _hubConnection;
-    List<decimal> bids = new();
+    private ApexChart<Bid> _bookChart = default!;
+    List<Bid> bids = new();
+
+
     List<decimal> asks = new();
     List<decimal> prices = new();
     private bool _dataUpdated = false;
@@ -89,46 +55,21 @@
 
             try
             {
-                bids = book.Bids.Select(b => decimal.Parse(b[0], CultureInfo.InvariantCulture)).ToList();
-                asks = book.Asks.Select(a => decimal.Parse(a[0], CultureInfo.InvariantCulture)).ToList();
-                prices = book.Bids.Select(b => decimal.Parse(b[1], CultureInfo.InvariantCulture)).ToList();
-                    //.Concat(book.Asks.Select(a => decimal.Parse(a[1], CultureInfo.InvariantCulture))).ToList();
+                bids = book.Bids.Select(b => new Bid
+                {
+                    Price = decimal.Parse(b[0], CultureInfo.InvariantCulture),
+                    Quantity = decimal.Parse(b[1], CultureInfo.InvariantCulture)
+                }).ToList();
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error parsing prices");
             }
-    
 
-            //Logger.LogInformation($"Bid 1 {IfNull(bids[0])} {IfNull(bids[1])}");
-
-            //await JSRuntime.InvokeVoidAsync("updateOrderBookChart", bids, asks, prices);
-
-            //StateHasChanged();
-
-            _dataUpdated = true;
-            //await InvokeAsync(async () => await JSRuntime.InvokeVoidAsync("updateOrderBookChart", bids, asks, prices));
+            await _bookChart.UpdateSeriesAsync();
             await InvokeAsync(StateHasChanged);
         });
 
         await _hubConnection.StartAsync();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        await base.OnAfterRenderAsync(firstRender);
-        
-        if(firstRender){
-            if (_dataUpdated)
-            {
-                await JSRuntime.InvokeVoidAsync("updateOrderBookChart", bids, asks, prices);
-                _dataUpdated = false;
-            }
-        }
-    }
-
-    protected string IfNull(string value)
-    {
-        return value ?? "null";
     }
 }
