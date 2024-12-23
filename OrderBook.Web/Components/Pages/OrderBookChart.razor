@@ -22,6 +22,7 @@
                             YValue="@((b) => b.Amount)"
                             OrderByDescending="e=>e.Y"
                             SeriesType="SeriesType.Bar"
+                            Color="#FF2400"
                          />
 
         <ApexPointSeries TItem="Order"
@@ -31,9 +32,24 @@
                             YValue="@((a) => a.Amount)"
                             OrderByDescending="e=>e.Y"
                             SeriesType="SeriesType.Bar"
+                            Color="#39FF14"
                          />
     </ApexChart>
 </div>
+
+<Row class="user-purchase-container">
+        <RowCol>
+            <label for="amount">BTC Amount</label>
+            <input type="number" class="amount-control" placeholder="0"/>
+        </RowCol>
+         <RowCol>
+            <label for="amount">Prices (EUR)</label>
+            <label id="price" class="price-control"> 0 </label>
+        </RowCol>
+        <RowCol>
+           <button>Purchase</button>
+        </RowCol>
+</Row>
 
 @code
 {
