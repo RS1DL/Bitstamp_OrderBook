@@ -14,11 +14,11 @@ namespace OrderBook.Api.Services
     {
         private readonly ILogger<OrderBookDataReceiver> _logger;
         private readonly ClientWebSocket _client;
-        private readonly IDataProcessor<LiveOrderBook> _dataProcessor;
+        private readonly IDataProcessor<BitstampLiveOrderBook> _dataProcessor;
 
         public OrderBookDataReceiver(
             ILogger<OrderBookDataReceiver> logger,
-            IDataProcessor<LiveOrderBook> dataProcessor)
+            IDataProcessor<BitstampLiveOrderBook> dataProcessor)
         {
             _logger = logger;
             _client = new ClientWebSocket();
@@ -64,8 +64,7 @@ namespace OrderBook.Api.Services
                             PropertyNameCaseInsensitive = true
                         };
                         BitstampResponse response = JsonSerializer.Deserialize<BitstampResponse>(data, options);
-                        //_logger.LogInformation($"Received order book data at {orderBook.TimeStamp} with {orderBook.Bids.Count} bids and {orderBook.Asks.Count} asks.");
-
+                        
                         await _dataProcessor.ProcessDataAsync(response.Data);
                     }
                 }

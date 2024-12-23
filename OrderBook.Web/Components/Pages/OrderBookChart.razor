@@ -11,15 +11,15 @@
 <h3>Order Book</h3>
 
 <div class="chart-container">
-    <ApexChart TItem="Bid"
+    <ApexChart TItem="Order"
                Title="Order Book"
                @ref="_bookChart">
         
-        <ApexPointSeries TItem="Bid"
+        <ApexPointSeries TItem="Order"
                          Items="bids"
                          Name="Bids"
                             XValue="@((b) => b.Price)"
-                            YValue="@((b) => b.Quantity)"
+                            YValue="@((b) => b.Amount)"
                             OrderByDescending="e=>e.Y"
                             SeriesType="SeriesType.Bar"
                          />
@@ -35,13 +35,9 @@
     }
 
     private HubConnection _hubConnection;
-    private ApexChart<Bid> _bookChart = default!;
-    List<Bid> bids = new();
-
-
-    List<decimal> asks = new();
-    List<decimal> prices = new();
-    private bool _dataUpdated = false;
+    private ApexChart<Order> _bookChart = default!;
+    IEnumerable<Order> bids;
+    IEnumerable<Order> asks;
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,11 +51,10 @@
 
             try
             {
-                bids = book.Bids.Select(b => new Bid
-                {
-                    Price = decimal.Parse(b[0], CultureInfo.InvariantCulture),
-                    Quantity = decimal.Parse(b[1], CultureInfo.InvariantCulture)
-                }).ToList();
+                bids = book.Bids.GroupBy(b => b.Price)
+                                           .Select(g => new Order { Price = g.Key, Amount = g.Sum(o => o.Amount) })
+                                           .ToList();
+                asks = book.Asks;
             }
             catch (Exception ex)
             {

@@ -8,7 +8,7 @@ namespace OrderBook.Api.Models
 {
     public class BitstampResponse
     {
-        public LiveOrderBook Data { get; set; }
+        public BitstampLiveOrderBook Data { get; set; }
         public string Channel { get; set; }
         public string Event { get; set; }
     }

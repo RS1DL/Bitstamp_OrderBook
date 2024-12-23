@@ -2,6 +2,7 @@ using OrderBook.Api.Infrastructure.Hub;
 using OrderBook.Shared.Models;
 using OrderBook.Api.Services;
 using Serilog;
+using OrderBook.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,7 @@ builder.Services.AddCors();
 builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddConsole());
 
 builder.Services.AddTransient<IDataReceiver, OrderBookDataReceiver>();
-builder.Services.AddTransient<IDataProcessor<LiveOrderBook>, OrderBookDataProcessor>();
+builder.Services.AddTransient<IDataProcessor<BitstampLiveOrderBook>, OrderBookDataProcessor>();
 
 builder.Services.AddHostedService<OrderBookDataReceiver>();
 
