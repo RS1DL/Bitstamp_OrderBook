@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Net.WebSockets;
 using OrderBook.Shared.Models;
 using System.Text;
@@ -12,6 +8,7 @@ namespace OrderBook.Api.Services
 {
     public class OrderBookDataReceiver: BackgroundService, IDisposable, IDataReceiver
     {
+        private readonly string _bitstampUrl;
         private readonly ILogger<OrderBookDataReceiver> _logger;
         private readonly ClientWebSocket _client;
         private readonly IDataProcessor<BitstampLiveOrderBook> _dataProcessor;
@@ -23,10 +20,16 @@ namespace OrderBook.Api.Services
             _logger = logger;
             _client = new ClientWebSocket();
             _dataProcessor = dataProcessor;
+            _bitstampUrl = Environment.GetEnvironmentVariable("BITSTAMP_SOCKET") ?? "wss://ws.bitstamp.net";
         }
 
         public async Task SubscribeAsync(string pair)
-        {
+        {   
+            if(_client.State != WebSocketState.Open)
+            {
+                await _client.ConnectAsync(new Uri(_bitstampUrl), CancellationToken.None);
+            }
+
             var _subscription = new BitstampEvent("bts:subscribe")
             {
                 Pair = pair
@@ -42,7 +45,6 @@ namespace OrderBook.Api.Services
 
             if(_client.State != WebSocketState.Open)
             {
-                await _client.ConnectAsync(new Uri("wss://ws.bitstamp.net"), CancellationToken.None);
                 await SubscribeAsync("btceur");
             }
 

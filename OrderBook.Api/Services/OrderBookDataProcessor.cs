@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using OrderBook.Api.Infrastructure.Hub;
 using OrderBook.Api.Models;
 using OrderBook.Shared.Models;
+using OrderBook.Web.Extensions;
 
 namespace OrderBook.Api.Services
 {
@@ -28,24 +24,12 @@ namespace OrderBook.Api.Services
             try{
                 LiveOrderBook orderBook = new LiveOrderBook
                 {
-                    Asks = data.Asks.Select(a => new Order
-                    {
-                        Price = decimal.Parse(a[0], CultureInfo.InvariantCulture),
-                        Amount = decimal.Parse(a[1], CultureInfo.InvariantCulture)
-                    }).ToList(),
-
-                    Bids = data.Bids.Select(b => new Order
-                    {
-                        Price = decimal.Parse(b[0], CultureInfo.InvariantCulture),
-                        Amount = decimal.Parse(b[1], CultureInfo.InvariantCulture)
-                    }).ToList(),
-
+                    Asks = data.Asks.ParseFromStrings().GroupOrders(),
+                    Bids = data.Bids.ParseFromStrings().GroupOrders(),
                     TimeStamp = data.TimeStamp,
                     MicroTimeStamp = data.MicroTimeStamp
                 };
                 
-
-                //TODO: Add logic to process data
                 await _hubContext.Clients.All.ReceiveOrderBookCurrentState(orderBook);
             }
             catch(Exception ex)

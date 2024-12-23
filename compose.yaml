@@ -2,10 +2,11 @@ name: "order book visualization"
 services:
   frontend:
     image: "frontend:latest"
+    build:
     ports:
       - "8080:8080"
     environment:
-      - "REACT_APP_API_URL=http://backend:8081"
+      - "HUB_URL=http://backend/orderbookhub:8081"
     depends_on:
       - backend
   
@@ -14,15 +15,22 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - "REDIS_URL=redis://redis:6379"
+      - "BITSTAMP_SOCKET=wss://ws.bitstamp.net"
     depends_on:
       - db
 
   db:
-    image: "postgres:latest"
+    image: postgres:17.0
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: qwerty
+      POSTGRES_DB: house_tarification
     ports:
       - "5432:5432"
-    environment:
+    networks:
+      - "order-book-visualization"
       
 
 networks:

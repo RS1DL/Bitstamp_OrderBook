@@ -1,13 +1,10 @@
 @page "/orderbookchart"
 @attribute [StreamRendering]
 @rendermode InteractiveServer
-@inject IJSRuntime JSRuntime
-@inject ILogger<OrderBookChart> Logger
 @using ApexCharts;
 @using OrderBook.Shared.Models;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using System.Globalization;
-@using OrderBook.Web.Extensions;
 
 <h3>Order Book</h3>
 
@@ -82,18 +79,23 @@
 
     protected override async Task OnInitializedAsync()
     {
+        string url;
+
+        if(Environment.IsDevelopment)
+            url = "http://localhost:5192/orderbookhub";
+        else
+            url = Environment.GetEnvironmentVariable("HUB_URL");
+
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl("http://localhost:5192/orderbookhub")
+            .WithUrl(Environment.GetEnvironmentVariable("HUB_URL") ?? "http://localhost:5192/orderbookhub")
             .Build();
 
         _hubConnection.On<LiveOrderBook>("ReceiveOrderBookCurrentState", async (book) =>
         {
-            Logger.LogInformation($"Received order book data {book.Bids.Count} bids and {book.Asks.Count} asks.");
-
             try
             {
-                bids = book.Bids.GroupOrders();
-                asks = book.Asks.GroupOrders();
+                bids = book.Bids;
+                asks = book.Asks;
             }
             catch (Exception ex)
             {
