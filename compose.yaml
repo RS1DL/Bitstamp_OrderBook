@@ -1,0 +1,31 @@
+name: "order book visualization"
+services:
+  frontend:
+    image: "frontend:latest"
+    ports:
+      - "8080:8080"
+    environment:
+      - "REACT_APP_API_URL=http://backend:8081"
+    depends_on:
+      - backend
+  
+  backend:
+    image: "backend:latest"
+    ports:
+      - "8081:8081"
+    environment:
+      - "REDIS_URL=redis://redis:6379"
+    depends_on:
+      - db
+
+  db:
+    image: "postgres:latest"
+    ports:
+      - "5432:5432"
+    environment:
+      
+
+networks:
+  default:
+    name: "order-book-visualization"
+  

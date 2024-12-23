@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using OrderBook.Shared.Models;
+using OrderBook.Api.Services;
 
 namespace OrderBook.Api.Infrastructure.Hub
 {
@@ -13,10 +9,5 @@ namespace OrderBook.Api.Infrastructure.Hub
         {
             await base.OnConnectedAsync();
         }
-    }
-
-    public interface IOrderBookClient
-    {
-        Task ReceiveOrderBookCurrentState(LiveOrderBook data);
     }
 }

@@ -7,6 +7,7 @@
 @using OrderBook.Shared.Models;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using System.Globalization;
+@using OrderBook.Web.Extensions;
 
 <h3>Order Book</h3>
 
@@ -40,11 +41,12 @@
 <Row class="user-purchase-container">
         <RowCol>
             <label for="amount">BTC Amount</label>
-            <input type="number" class="amount-control" placeholder="0"/>
+            <input id="btcamount" type="number" class="amount-control"  
+                @onchange="@((ChangeEventArgs __e) => UpdateAmount(__e?.Value?.ToString()))"/>
         </RowCol>
          <RowCol>
             <label for="amount">Prices (EUR)</label>
-            <label id="price" class="price-control"> 0 </label>
+            <label class="price-control"> @Price  </label>
         </RowCol>
         <RowCol>
            <button>Purchase</button>
@@ -53,16 +55,30 @@
 
 @code
 {
-    public class Bid
-    {
-        public decimal Price { get; set; }
-        public decimal Quantity { get; set; }
-    }
-
     private HubConnection _hubConnection;
     private ApexChart<Order> _bookChart = default!;
+
     IEnumerable<Order> bids;
     IEnumerable<Order> asks;
+    
+    private decimal Price {get; set;} = 0;
+    private decimal Amount {get; set;} = 1;
+
+    private void UpdateAmount(string value){
+        if(decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal result))
+            Amount = result;
+        else
+            Amount = 0;
+
+        UpdatePrice();
+    }
+
+    private void UpdatePrice(){
+        if(Amount > 0)
+            Price = asks.Where(a => a.Amount >= Amount).FirstOrDefault().Price * Amount;
+        else 
+            Price = 0;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -76,18 +92,15 @@
 
             try
             {
-                bids = book.Bids.GroupBy(b => b.Price)
-                                           .Select(g => new Order { Price = g.Key, Amount = g.Sum(o => o.Amount) })
-                                           .ToList();
-
-                asks = book.Asks.GroupBy(b => b.Price)
-                                           .Select(g => new Order { Price = g.Key, Amount = g.Sum(o => o.Amount) })
-                                           .ToList();
+                bids = book.Bids.GroupOrders();
+                asks = book.Asks.GroupOrders();
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error parsing prices");
             }
+            
+            UpdatePrice();
 
             await _bookChart.UpdateSeriesAsync();
             await InvokeAsync(StateHasChanged);
