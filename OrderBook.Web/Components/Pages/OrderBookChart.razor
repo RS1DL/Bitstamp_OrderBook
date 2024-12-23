@@ -1,4 +1,4 @@
-@page "/orderbook/btceur"
+@page "/orderbookchart"
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
@@ -20,6 +20,15 @@
                          Name="Bids"
                             XValue="@((b) => b.Price)"
                             YValue="@((b) => b.Amount)"
+                            OrderByDescending="e=>e.Y"
+                            SeriesType="SeriesType.Bar"
+                         />
+
+        <ApexPointSeries TItem="Order"
+                         Items="asks"
+                         Name="Asks"
+                            XValue="@((a) => a.Price)"
+                            YValue="@((a) => a.Amount)"
                             OrderByDescending="e=>e.Y"
                             SeriesType="SeriesType.Bar"
                          />
@@ -54,7 +63,10 @@
                 bids = book.Bids.GroupBy(b => b.Price)
                                            .Select(g => new Order { Price = g.Key, Amount = g.Sum(o => o.Amount) })
                                            .ToList();
-                asks = book.Asks;
+
+                asks = book.Asks.GroupBy(b => b.Price)
+                                           .Select(g => new Order { Price = g.Key, Amount = g.Sum(o => o.Amount) })
+                                           .ToList();
             }
             catch (Exception ex)
             {
