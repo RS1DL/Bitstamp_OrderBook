@@ -79,12 +79,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        string url;
-
-        if(Environment.IsDevelopment)
-            url = "http://localhost:5192/orderbookhub";
-        else
-            url = Environment.GetEnvironmentVariable("HUB_URL");
+        string url = Environment.GetEnvironmentVariable("HUB_URL");
 
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(Environment.GetEnvironmentVariable("HUB_URL") ?? "http://localhost:5192/orderbookhub")
@@ -92,20 +87,18 @@
 
         _hubConnection.On<LiveOrderBook>("ReceiveOrderBookCurrentState", async (book) =>
         {
-            try
-            {
+            try{
                 bids = book.Bids;
                 asks = book.Asks;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error parsing prices");
-            }
-            
-            UpdatePrice();
+                
+                UpdatePrice();
 
-            await _bookChart.UpdateSeriesAsync();
-            await InvokeAsync(StateHasChanged);
+                await _bookChart.UpdateSeriesAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+            catch(Exception ex){
+                Console.WriteLine(ex.Message);
+            }
         });
 
         await _hubConnection.StartAsync();

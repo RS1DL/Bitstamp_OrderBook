@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using OrderBook.Shared.Models;
 
 namespace OrderBook.Api.Extensions
@@ -22,6 +23,20 @@ namespace OrderBook.Api.Extensions
                         Price = decimal.Parse(a[0], CultureInfo.InvariantCulture),
                         Amount = decimal.Parse(a[1], CultureInfo.InvariantCulture)
                     });
+        }
+
+        public static string AsString(this IEnumerable<Order> orders)
+        {
+            StringBuilder sb = new();
+
+            sb.AppendLine("[");
+
+            foreach (var order in orders)
+                sb.AppendLine($"[{order.Price}, {order.Amount}],");
+
+            sb.AppendLine("]");
+            
+            return sb.ToString();
         }
     }
 }

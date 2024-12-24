@@ -1,37 +1,24 @@
 name: "order book visualization"
 services:
   frontend:
-    image: "frontend:latest"
-    build:
+    build: ./OrderBook.Web
     ports:
-      - "8080:8080"
+      - "8080:5268"
     environment:
       - "HUB_URL=http://backend/orderbookhub:8081"
+    networks:
+      - "order-book-visualization"
     depends_on:
       - backend
   
   backend:
-    image: "backend:latest"
+    build: ./OrderBook.Api
     ports:
-      - "8081:8081"
+      - "8081:5192"
     environment:
       - "BITSTAMP_SOCKET=wss://ws.bitstamp.net"
-    depends_on:
-      - db
-
-  db:
-    image: postgres:17.0
-    container_name: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: qwerty
-      POSTGRES_DB: house_tarification
-    ports:
-      - "5432:5432"
     networks:
-      - "order-book-visualization"
-      
+      - "order-book-visualization"    
 
 networks:
   default:

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using OrderBook.Api.Infrastructure.Hub;
 using OrderBook.Api.Models;
 using OrderBook.Shared.Models;
-using OrderBook.Web.Extensions;
+using OrderBook.Api.Extensions;
 
 namespace OrderBook.Api.Services
 {
@@ -31,6 +31,7 @@ namespace OrderBook.Api.Services
                 };
                 
                 await _hubContext.Clients.All.ReceiveOrderBookCurrentState(orderBook);
+                _logger.LogInformation($"Data processed for batch {data.MicroTimeStamp} at {DateTime.UtcNow}: Asks: {orderBook.Asks.AsString()} Bids: {orderBook.Bids.AsString()}");
             }
             catch(Exception ex)
             {

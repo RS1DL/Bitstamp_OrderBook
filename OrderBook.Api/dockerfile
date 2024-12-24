@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/aspnet:9.0.0-bookworm-slim AS base
+WORKDIR /app
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0.101-bookworm-slim AS build
+WORKDIR /scr
+COPY ["OrderBook.Api/.", "OrderBook.Api/."]
+COPY ["OrderBook.Shared/.", "OrderBook.Shared/."]  
+
+RUN dotnet restore "OrderBook.Api/OrderBook.Api.csproj"
+
+WORKDIR "/scr/OrderBook.Api"
+
+RUN dotnet build "OrderBook.Api.csproj" -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "OrderBook.Api.csproj" -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "OrderBook.Api.dll"]
