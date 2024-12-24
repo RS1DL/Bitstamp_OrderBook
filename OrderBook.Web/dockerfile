@@ -1,5 +1,8 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0.0-bookworm-slim AS base
 WORKDIR /app
+EXPOSE 80
+EXPOSE 5268
+EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0.101-bookworm-slim AS build
 WORKDIR /scr
