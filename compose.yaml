@@ -1,0 +1,33 @@
+name: order_book
+
+services:
+  postgres:
+    image: postgres:17.0
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: qwerty
+      POSTGRES_DB: order_book
+    ports:
+      - "5432:5432"
+    networks:
+      - order_book
+
+  pgAdmin:
+    image: elestio/pgadmin:REL-8_12
+    container_name: pgAdmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: default@gmail.com 
+      PGADMIN_DEFAULT_PASSWORD: qwerty
+      PGADMIN_LISTEN_PORT: 8080
+    ports:
+      - "8080:8080"
+      - "443:443"
+    networks:
+      - order_book
+
+networks:
+  order_book:
+    driver: bridge

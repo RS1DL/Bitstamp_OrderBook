@@ -1,8 +1,11 @@
+using Npgsql.EntityFrameworkCore.PostgreSQL;
+using Microsoft.EntityFrameworkCore;
 using OrderBook.Api.Infrastructure.Hub;
 using OrderBook.Shared.Models;
 using OrderBook.Api.Services;
 using Serilog;
 using OrderBook.Api.Models;
+using OrderBook.Api.Infrastructure.DB;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,15 +19,22 @@ builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddConsole());
 builder.Services.AddTransient<IDataReceiver, OrderBookDataReceiver>();
 builder.Services.AddTransient<IDataProcessor<BitstampLiveOrderBook>, OrderBookDataProcessor>();
 
+var orderBookDbConnectionString = Environment.GetEnvironmentVariable("ORDER_BOOK_DB") ?? builder.Configuration["OrderBook:ConnectionString"];
+
+builder.Services.AddDbContextPool<OrderBookDbContext>(options => 
+    options.UseNpgsql(orderBookDbConnectionString));
+
 builder.Services.AddHostedService<OrderBookDataReceiver>();
 
 builder.Host.UseSerilog((ctx, lc) => lc
     .MinimumLevel.Debug()
+    .WriteTo.Console()
     .WriteTo.RollingFile(builder.Configuration.GetSection("Logger").GetValue<string>("Path") +"/log-{Date}.txt",
             outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:W}] {Message:lj}{NewLine}{Exception}", 
             retainedFileCountLimit: 14, 
             fileSizeLimitBytes: 1073741824
             )
+    .WriteTo.PostgreSQL(orderBookDbConnectionString, "Logs", needAutoCreateTable: true)
 );
 
 var app = builder.Build();

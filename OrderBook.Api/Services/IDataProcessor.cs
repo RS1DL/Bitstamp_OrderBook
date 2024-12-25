@@ -7,6 +7,6 @@ namespace OrderBook.Api.Services
 {
     public interface IDataProcessor<T>
     {
-        public Task ProcessDataAsync(T data);
+        public Task ProcessDataAsync(Guid packageId, T data);
     }
 }

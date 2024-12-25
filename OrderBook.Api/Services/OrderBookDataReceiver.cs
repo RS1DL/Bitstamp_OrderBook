@@ -25,8 +25,11 @@ namespace OrderBook.Api.Services
 
         public async Task SubscribeAsync(string pair)
         {   
+            _logger.LogInformation($"Subscribing to {pair} bitstamp live order book");
+
             if(_client.State != WebSocketState.Open)
             {
+                _logger.LogInformation("Connecting to bitstamp websocket");
                 await _client.ConnectAsync(new Uri(_bitstampUrl), CancellationToken.None);
             }
 
@@ -53,8 +56,10 @@ namespace OrderBook.Api.Services
             while(_client.State == WebSocketState.Open)
             {
                 var result = await _client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
                 if(result.MessageType == WebSocketMessageType.Close)
                 {
+                    _logger.LogInformation("Closing websocket connection");
                     await _client.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
                 }
                 else
@@ -62,20 +67,27 @@ namespace OrderBook.Api.Services
                     string data = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     if(!string.IsNullOrEmpty(data))
                     {   
+                        var packageId = Guid.NewGuid();
+
                         var options = new JsonSerializerOptions{
                             PropertyNameCaseInsensitive = true
                         };
+
                         BitstampResponse response = JsonSerializer.Deserialize<BitstampResponse>(data, options);
                         
-                        await _dataProcessor.ProcessDataAsync(response.Data);
+                        _logger.LogInformation($"Received data for batch {packageId} at {response.Data.MicroTimeStamp}");
+                        await _dataProcessor.ProcessDataAsync(packageId, response.Data);
                     }
                 }
             }
         }
 
-        public async Task UnsubscribeAsync(string pair){ //TODO make it withot hardcoding
+        public async Task UnsubscribeAsync(string pair)
+        {
             if(_client.State == WebSocketState.Open)
             {    
+                _logger.LogInformation($"Unsubscribing from {pair} bitstamp live order book");
+
                 var _unsubscription = new BitstampEvent("bts:unsubscribe")
                 {
                     Pair = pair
