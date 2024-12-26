@@ -15,11 +15,11 @@ namespace OrderBook.Api.Services
 
         public OrderBookDataReceiver(
             ILogger<OrderBookDataReceiver> logger,
-            IDataProcessor<BitstampLiveOrderBook> dataProcessor)
+            IDataProcessorFactory dataProcessorFactory)
         {
             _logger = logger;
             _client = new ClientWebSocket();
-            _dataProcessor = dataProcessor;
+            _dataProcessor = dataProcessorFactory.Create<BitstampLiveOrderBook>();
             _bitstampUrl = Environment.GetEnvironmentVariable("BITSTAMP_SOCKET") ?? "wss://ws.bitstamp.net";
         }
 

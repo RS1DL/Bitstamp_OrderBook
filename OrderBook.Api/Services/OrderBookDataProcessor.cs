@@ -5,21 +5,22 @@ using OrderBook.Shared.Models;
 using OrderBook.Api.Extensions;
 using OrderBook.Api.Infrastructure.DB;
 using OrderBook.Api.Infrastructure.DB.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace OrderBook.Api.Services
 {
     public class OrderBookDataProcessor : IDataProcessor<BitstampLiveOrderBook>
     {
         private readonly IHubContext<OrderBookHub, IOrderBookClient> _hubContext;
-        private readonly OrderBookDbContext _dbContext;
+        private IDbContextFactory<OrderBookDbContext> _dbContextFactory;
         private readonly ILogger<OrderBookDataProcessor> _logger;
 
         public OrderBookDataProcessor(IHubContext<OrderBookHub, IOrderBookClient> hubContext, 
-                                      OrderBookDbContext dbContext,
+                                      IDbContextFactory<OrderBookDbContext> dbContextFactory,
                                       ILogger<OrderBookDataProcessor> logger)
         {
             _hubContext = hubContext;
-            _dbContext = dbContext;
+            _dbContextFactory = dbContextFactory;
             _logger = logger;
         }
 
@@ -56,7 +57,7 @@ namespace OrderBook.Api.Services
                     Type = OrderType.Ask, 
                     Price = x.Price, 
                     Amount = x.Amount 
-                }),
+                }).ToList(),
 
                 Bids = data.Bids.Select(x => new OrderEntity 
                 {
@@ -65,13 +66,14 @@ namespace OrderBook.Api.Services
                     Type = OrderType.Bid, 
                     Price = x.Price, 
                     Amount = x.Amount 
-                }),
+                }).ToList(),
 
                 TimeStamp = data.TimeStamp,
                 MicroTimeStamp = data.MicroTimeStamp,
                 CreatedAt = DateTime.UtcNow
             };
 
+            await using var _dbContext = _dbContextFactory.CreateDbContext();
             _dbContext.OrderBooks.Add(orderBookEntity);
             await _dbContext.SaveChangesAsync();
         }
