@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OrderBook.Api\OrderBook.Api.csproj" />
+    <ProjectReference Include="..\OrderBook.Web\OrderBook.Web.csproj" />
   </ItemGroup>
 
 </Project>

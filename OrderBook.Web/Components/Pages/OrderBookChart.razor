@@ -46,6 +46,9 @@
             <label class="price-control"> @Price  </label>
         </RowCol>
         <RowCol>
+            <label for="amount">@Error</label>
+        </RowCol>
+        <RowCol>
            <button>Purchase</button>
         </RowCol>
 </Row>
@@ -59,7 +62,8 @@
     IEnumerable<Order> asks;
     
     private decimal Price {get; set;} = 0;
-    private decimal Amount {get; set;} = 1;
+    private decimal Amount {get; set;} = 0;
+    private string Error {get; set;} = null;
 
     private void UpdateAmount(string value){
         if(decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal result))
@@ -71,10 +75,33 @@
     }
 
     private void UpdatePrice(){
-        if(Amount > 0)
-            Price = asks.Where(a => a.Amount >= Amount).FirstOrDefault().Price * Amount;
-        else 
-            Price = 0;
+        if(Amount > 0 && asks != null && Amount < asks.Sum(a => a.Amount))
+        {
+            Price = CalculatePrice(Amount, asks);
+            Error = null;
+        }
+        else {
+            Error = "Amount is invalid";
+        }
+    }
+
+    private decimal CalculatePrice(decimal amount, IEnumerable<Order> asks){
+        decimal min_price = 0;
+
+        var amount_left = amount;
+
+        foreach(var ask in asks.OrderBy(a => a.Price)){
+            if(ask.Amount >= amount_left){
+                min_price += ask.Price * amount_left;
+                break;
+            }
+            else{
+                min_price += ask.Price * ask.Amount;
+                amount_left -= ask.Amount;
+            }
+        }
+
+        return min_price;
     }
 
     protected override async Task OnInitializedAsync()
